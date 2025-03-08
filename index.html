@@ -303,11 +303,11 @@
                 bevelEnabled: true,
                 bevelThickness: 0.1,
                 bevelSize: 0.1,
-                bevelSegments: 5
+                bevelSegments: 1
             });
             const textMaterial = new THREE.MeshPhongMaterial({ color: 0xffa500 });
             const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-            textMesh.position.set(-15, buildingHeight + 1, 0);
+            textMesh.position.set(-10, buildingHeight + 2, 14);
             scene.add(textMesh);
         });
 
@@ -325,6 +325,336 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+
+
+// 3. Fenêtres améliorées sur les façades longues avec cadres
+
+const frameWidth = 0.2;
+
+// Matériau de la vitre
+const glassMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0x88cffa,
+  metalness: 0.2,
+  roughness: 0.1,
+  transmission: 0.9,
+  transparent: true,
+  opacity: 0.7,
+  clearcoat: 1.0,
+  clearcoatRoughness: 0.1
+});
+
+// Matériau du cadre
+const frameMaterial = new THREE.MeshPhongMaterial({
+  color: 0x555555,
+  specular: 0x999999,
+  shininess: 60
+});
+
+
+for (let i = 1; i < floors; i++) {
+  // Calcul de la position Y (hauteur) en fonction de l'étage
+  let currentFloorHeight = officeFloorHeight;
+  const yPos = groundFloorHeight + ((i - 1) * currentFloorHeight) + currentFloorHeight / 2;
+  
+  // Pour chaque côté du bâtiment (sauf côté escalier)
+  for (const side of [-1, 1]) {
+    if (side === 1) continue; // Pas de fenêtres côté escalier
+    
+    for (let j = 0; j < windowsPerFloor; j++) {
+      const x = side * (buildingWidth / 2 + windowDepth / 2 + 0.01);
+      const z = -buildingLength / 2 + (j + 0.5) * (buildingLength / windowsPerFloor);
+      
+      // Groupe pour chaque fenêtre et son cadre
+      const windowGroup = new THREE.Group();
+      
+      // Cadre de fenêtre (boîte extérieure)
+      const frameGeom = new THREE.BoxGeometry(windowDepth, windowHeight + frameWidth*2, windowWidth + frameWidth*2);
+      const frameMesh = new THREE.Mesh(frameGeom, frameMaterial);
+      
+      // Vitre (boîte intérieure)
+      const glassGeom = new THREE.BoxGeometry(windowDepth*1.01, windowHeight, windowWidth);
+      const glassMesh = new THREE.Mesh(glassGeom, glassMaterial);
+      glassMesh.position.z = 0;
+      
+      // Ajout des composants au groupe de la fenêtre
+      windowGroup.add(frameMesh);
+      windowGroup.add(glassMesh);
+      
+      // Positionnement du groupe
+      windowGroup.position.set(x, yPos, z);
+      if (side === -1) {
+        windowGroup.rotation.y = Math.PI;
+      }
+      
+      // Créer un effet de profondeur en ajoutant un petit retrait
+      const recess = 0.1;
+      windowGroup.position.x -= side * recess;
+      
+      // Varier légèrement la taille de certaines fenêtres pour les étages supérieurs
+      if (i > 5) {
+        windowGroup.scale.set(1, 1.1, 1.05);
+      }
+      
+      windowGroup.castShadow = true;
+      buildingGroup.add(windowGroup);
+    }
+  }
+}
+
+
+
+
+
+// Création d'une façade moderne avec éléments décoratifs
+function createModernFacade() {
+  const facadeGroup = new THREE.Group();
+  
+  // Matériau de base pour la façade
+  const facadeMaterial = new THREE.MeshPhongMaterial({
+    color: 0xdedede,
+    specular: 0x555555,
+    shininess: 30
+  });
+  
+  // Matériau d'accent (pour les bandes décoratives)
+  const accentMaterial = new THREE.MeshPhongMaterial({
+    color: 0x3a7ca5,
+    specular: 0x777777,
+    shininess: 50
+  });
+  
+  // Façade principale
+  const facadeGeometry = new THREE.BoxGeometry(buildingWidth, buildingHeight, 0.2);
+  const mainFacade = new THREE.Mesh(facadeGeometry, facadeMaterial);
+  mainFacade.position.set(0, buildingHeight/2, buildingLength/2 + 0.1);
+  mainFacade.castShadow = true;
+  mainFacade.receiveShadow = true;
+  facadeGroup.add(mainFacade);
+  
+  // Bandes horizontales décoratives
+  for (let i = 1; i < floors; i++) {
+    const bandHeight = 0.4;
+    const bandGeometry = new THREE.BoxGeometry(buildingWidth + 0.4, bandHeight, 0.3);
+    const band = new THREE.Mesh(bandGeometry, accentMaterial);
+    
+    // Position de la bande au-dessus de chaque étage
+    const yPos = groundFloorHeight + (i-1) * officeFloorHeight;
+    band.position.set(0, yPos, buildingLength/2 + 0.2);
+    band.castShadow = true;
+    facadeGroup.add(band);
+  }
+  
+  // Ajout d'un élément architectural distinctif au sommet
+  const crownHeight = 1.2;
+  const crownGeometry = new THREE.BoxGeometry(buildingWidth + 1, crownHeight, 0.5);
+  const crown = new THREE.Mesh(crownGeometry, accentMaterial);
+  crown.position.set(0, buildingHeight + crownHeight/2, buildingLength/2 + 0.2);
+  crown.castShadow = true;
+  facadeGroup.add(crown);
+  
+  // Entrée principale améliorée
+  const entranceWidth = 3.5;
+  const entranceHeight = groundFloorHeight + 0.5;
+  const entranceDepth = 0.8;
+  
+  // Cadre de l'entrée
+  const frameGeometry = new THREE.BoxGeometry(entranceWidth + 0.6, entranceHeight + 0.6, entranceDepth);
+  const entranceFrame = new THREE.Mesh(frameGeometry, accentMaterial);
+  entranceFrame.position.set(
+    buildingWidth/2 - entranceWidth/2, 
+    entranceHeight/2, 
+    buildingLength/2 + entranceDepth/2
+  );
+  facadeGroup.add(entranceFrame);
+  
+  // Porte vitrée
+  const doorMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0x333333,
+    metalness: 0.5,
+    roughness: 0.2,
+    transmission: 0.1,
+    transparent: true,
+    opacity: 0.9
+  });
+  const doorGeometry = new THREE.BoxGeometry(entranceWidth, entranceHeight, entranceDepth/4);
+  const door = new THREE.Mesh(doorGeometry, doorMaterial);
+  door.position.set(
+    buildingWidth/2 - entranceWidth/2, 
+    entranceHeight/2, 
+    buildingLength/2 + entranceDepth/2 + 0.2
+  );
+  facadeGroup.add(door);
+  
+  return facadeGroup;
+}
+
+// Ajouter la façade au groupe du bâtiment
+const modernFacade = createModernFacade();
+buildingGroup.add(modernFacade);
+
+
+// Création d'un toit-terrasse moderne
+function createRoofTerrace() {
+  const terraceGroup = new THREE.Group();
+  
+  // Matériau du sol de la terrasse
+  const floorMaterial = new THREE.MeshPhongMaterial({
+    color: 0xe0e0e0,
+    specular: 0x222222,
+    shininess: 30
+  });
+  
+  // Sol de la terrasse (légèrement plus petit que l'emprise du bâtiment)
+  const terraceFloorGeometry = new THREE.BoxGeometry(
+    buildingWidth - 0.5, 
+    0.2, 
+    buildingLength - 0.5
+  );
+  const terraceFloor = new THREE.Mesh(terraceFloorGeometry, floorMaterial);
+  terraceFloor.position.y = buildingHeight + 0.1;
+  terraceFloor.receiveShadow = true;
+  terraceGroup.add(terraceFloor);
+  
+  // Garde-corps périphérique
+  const railingMaterial = new THREE.MeshPhongMaterial({
+    color: 0x888888,
+    specular: 0x444444,
+    shininess: 60
+  });
+  
+  const railingHeight = 1.2;
+  const railingThickness = 0.08;
+  
+  // Garde-corps côtés longs
+  for (const side of [-1, 1]) {
+    const railingLongGeometry = new THREE.BoxGeometry(
+      railingThickness, 
+      railingHeight, 
+      buildingLength - 0.3
+    );
+    const railingLong = new THREE.Mesh(railingLongGeometry, railingMaterial);
+    railingLong.position.set(
+      side * (buildingWidth/2 - 0.25),
+      buildingHeight + railingHeight/2 + 0.2,
+      0
+    );
+    railingLong.castShadow = true;
+    terraceGroup.add(railingLong);
+  }
+  
+  // Garde-corps côtés courts
+  for (const side of [-1, 1]) {
+    const railingShortGeometry = new THREE.BoxGeometry(
+      buildingWidth - 0.3,
+      railingHeight,
+      railingThickness
+    );
+    const railingShort = new THREE.Mesh(railingShortGeometry, railingMaterial);
+    railingShort.position.set(
+      0,
+      buildingHeight + railingHeight/2 + 0.2,
+      side * (buildingLength/2 - 0.25)
+    );
+    railingShort.castShadow = true;
+    terraceGroup.add(railingShort);
+  }
+  
+  // Ajouter des éléments décoratifs sur le toit (pergola, etc.)
+  const pergolaHeight = 2.5;
+  const pergolaWidth = buildingWidth * 0.5;
+  const pergolaLength = buildingLength * 0.3;
+  
+  // Structure de la pergola
+  const pergolaMaterial = new THREE.MeshPhongMaterial({
+    color: 0x5d4037,
+    specular: 0x222222,
+    shininess: 20
+  });
+  
+  // Piliers de la pergola (4 coins)
+  const pillarRadius = 0.1;
+  const pillarGeometry = new THREE.CylinderGeometry(
+    pillarRadius, pillarRadius, pergolaHeight, 8
+  );
+  
+  for (let x of [-1, 1]) {
+    for (let z of [-1, 1]) {
+      const pillar = new THREE.Mesh(pillarGeometry, pergolaMaterial);
+      pillar.position.set(
+        x * (pergolaWidth/2 - pillarRadius),
+        buildingHeight + pergolaHeight/2 + 0.2,
+        z * (pergolaLength/2 - pillarRadius)
+      );
+      pillar.castShadow = true;
+      terraceGroup.add(pillar);
+    }
+  }
+  
+  // Poutres horizontales
+  const beamThickness = 0.15;
+  
+  // Poutres dans le sens de la longueur
+  for (let x of [-1, 1]) {
+    const longBeamGeometry = new THREE.BoxGeometry(
+      beamThickness, beamThickness, pergolaLength
+    );
+    const longBeam = new THREE.Mesh(longBeamGeometry, pergolaMaterial);
+    longBeam.position.set(
+      x * (pergolaWidth/2 - pillarRadius),
+      buildingHeight + pergolaHeight + 0.2,
+      0
+    );
+    longBeam.castShadow = true;
+    terraceGroup.add(longBeam);
+  }
+  
+  // Poutres dans le sens de la largeur
+  for (let z of [-1, 1]) {
+    const widthBeamGeometry = new THREE.BoxGeometry(
+      pergolaWidth, beamThickness, beamThickness
+    );
+    const widthBeam = new THREE.Mesh(widthBeamGeometry, pergolaMaterial);
+    widthBeam.position.set(
+      0,
+      buildingHeight + pergolaHeight + 0.2,
+      z * (pergolaLength/2 - pillarRadius)
+    );
+    widthBeam.castShadow = true;
+    terraceGroup.add(widthBeam);
+  }
+  
+  // Lattes transversales (ombrage)
+  const latteCount = 8;
+  const latteWidth = pergolaWidth - 0.2;
+  const latteThickness = 0.05;
+  const latteSpacing = pergolaLength / latteCount;
+  
+  for (let i = 0; i < latteCount; i++) {
+    const latteGeometry = new THREE.BoxGeometry(
+      latteWidth, latteThickness, beamThickness
+    );
+    const latte = new THREE.Mesh(latteGeometry, pergolaMaterial);
+    latte.position.set(
+      0,
+      buildingHeight + pergolaHeight + 0.2,
+      -pergolaLength/2 + i * latteSpacing + latteSpacing/2
+    );
+    latte.castShadow = true;
+    terraceGroup.add(latte);
+  }
+  
+  return terraceGroup;
+}
+
+// Ajouter le toit-terrasse au groupe du bâtiment
+const roofTerrace = createRoofTerrace();
+buildingGroup.add(roofTerrace);
+
+
+
+
+
     </script>
     <footer>
         <p>© 2025 Immeuble R+7 - Tous droits réservés | CHAABA MY ABDELOUAHAD | TEL: 0661112540</p>
