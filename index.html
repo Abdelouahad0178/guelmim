@@ -4,8 +4,32 @@
     <meta charset="UTF-8">
     <title>Immeuble R+7 en Three.js - Design Amélioré</title>
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
         canvas { display: block; }
+
+        /* Style du footer */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 15px 0;
+            font-size: 16px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        footer a {
+            color: #ecf0f1;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        footer a:hover {
+            color: #f39c12;
+        }
     </style>
 </head>
 <body>
@@ -240,5 +264,8 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
+   <footer>
+    <p>© 2025 Immeuble R+7 - Tous droits réservés | CHAABA MY ABDELOUAHAD | TEL: 0661112540</p>
+</footer> 
 </body>
 </html>
