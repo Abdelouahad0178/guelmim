@@ -51,40 +51,38 @@
 
         // Création de la scène
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xb0c4de); // Bleu clair pour le ciel
+        scene.background = new THREE.Color(0xb0c4de);
 
         // Création de la caméra
-        const camera = new THREE.PerspectiveCamera(
-          45,
-          window.innerWidth / window.innerHeight,
-          0.1,
-          1000
-        );
-        camera.position.set(40, 40, 60); // Reculer un peu la caméra
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(40, 40, 60);
 
         // Création du renderer
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true; // Activer les ombres
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Adoucir les ombres
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        // Ajout des contrôles d'orbite pour naviguer dans la scène
+        // Contrôles d'orbite
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.target.set(0, 12, 0);
         controls.update();
 
-        // Éclairage amélioré
-        const ambientLight = new THREE.AmbientLight(0x404040, 1); // Réduire un peu l'intensité ambiante
+        // Éclairage
+        const ambientLight = new THREE.AmbientLight(0x404040, 1);
         scene.add(ambientLight);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // Lumière directionnelle plus douce
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
         directionalLight.position.set(20, 30, 20);
-        directionalLight.castShadow = true; // Activer les ombres pour la lumière directionnelle
-        directionalLight.shadow.mapSize.width = 1024; // Améliorer la résolution des ombres
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 1024;
         directionalLight.shadow.mapSize.height = 1024;
         directionalLight.shadow.camera.near = 0.5;
         directionalLight.shadow.camera.far = 100;
+        // Ajustements pour atténuer les artefacts d'ombre
+        directionalLight.shadow.bias = -0.01;
+        directionalLight.shadow.normalBias = 0.05;
         scene.add(directionalLight);
 
         // Dimensions de l'immeuble
@@ -93,27 +91,41 @@
         const floorHeight = 3;
         const floors = 8;
         const buildingHeight = floors * floorHeight;
-        const groundFloorHeight = 4.5; // Hauteur du rez-de-chaussée (local commercial)
+        const groundFloorHeight = 4.5; // Rez-de-chaussée (local commercial)
         const officeFloorHeight = (buildingHeight - groundFloorHeight) / (floors - 1);
 
-        // Groupe principal de l'immeuble
+        // Groupe principal
         const buildingGroup = new THREE.Group();
 
-        // 1. Enveloppe de l'immeuble (semi-transparente)
+        // 1. Enveloppe de l'immeuble
         const envelopeGeometry = new THREE.BoxGeometry(buildingWidth, buildingHeight, buildingLength);
-        const envelopeMaterial = new THREE.MeshPhongMaterial({ color: 0xbbbbbb, opacity: 0.3, transparent: true, specular: 0x444444, shininess: 30 }); // Matériau plus réaliste
+        const envelopeMaterial = new THREE.MeshPhongMaterial({
+          color: 0xbbbbbb,
+          opacity: 0.3,
+          transparent: true,
+          specular: 0x444444,
+          shininess: 30
+        });
         const buildingEnvelope = new THREE.Mesh(envelopeGeometry, envelopeMaterial);
         buildingEnvelope.position.y = buildingHeight / 2;
         buildingGroup.add(buildingEnvelope);
 
         // 2. Dalles de plancher pour chaque niveau
-        const floorMaterial = new THREE.MeshPhongMaterial({ color: 0xe0e0e0, specular: 0x222222, shininess: 20 }); // Matériau plus réaliste
-        // Dalle du rez-de-chaussée (local commercial)
+        // Activation du polygonOffset pour éviter les interférences sur les dalles
+        const floorMaterial = new THREE.MeshPhongMaterial({
+          color: 0xe0e0e0,
+          specular: 0x222222,
+          shininess: 20,
+          polygonOffset: true,
+          polygonOffsetFactor: 1,
+          polygonOffsetUnits: 1
+        });
+        // Dalle du rez-de-chaussée
         const groundFloorSlabThickness = 0.2;
         const groundFloorSlabGeometry = new THREE.BoxGeometry(buildingWidth, groundFloorSlabThickness, buildingLength);
         const groundFloorSlab = new THREE.Mesh(groundFloorSlabGeometry, floorMaterial);
         groundFloorSlab.position.y = 0;
-        groundFloorSlab.receiveShadow = true; // Recevoir les ombres
+        groundFloorSlab.receiveShadow = true;
         buildingGroup.add(groundFloorSlab);
 
         for (let i = 1; i <= floors; i++) {
@@ -124,67 +136,72 @@
             if (i > 1) {
                 yPos += groundFloorSlabThickness + (i - 1) * officeFloorHeight;
             }
-
             slab.position.y = yPos;
             slab.receiveShadow = true;
             buildingGroup.add(slab);
         }
 
-        // 3. Création des fenêtres sur les façades longues (sauf à côté de l'escalier)
-        const windowWidth = 3.;  // Nouvelle largeur de fenêtre
-        const windowHeight = 2; // Nouvelle hauteur de fenêtre
+        // 3. Fenêtres sur les façades longues (sauf côté escalier)
+        const windowWidth = 3.0;
+        const windowHeight = 2;
         const windowDepth = 0.1;
-        const windowMaterial = new THREE.MeshPhongMaterial({ color: 0x87cefa, opacity: 0.7, transparent: true, specular: 0x555555, shininess: 50 }); // Matériau plus réaliste
+        const windowMaterial = new THREE.MeshPhongMaterial({
+          color: 0x87cefa,
+          opacity: 0.7,
+          transparent: true,
+          specular: 0x555555,
+          shininess: 50
+        });
         const windowsPerFloor = 3;
-
-        for (let i = 1; i < floors; i++) { // Commence à 1 pour ne pas mettre de fenêtres au RDC
+        for (let i = 1; i < floors; i++) { // Pas de fenêtres au RDC
           let currentFloorHeight = officeFloorHeight;
-          const yPos = groundFloorHeight + ((i-1) * currentFloorHeight) + currentFloorHeight / 2;
+          const yPos = groundFloorHeight + ((i - 1) * currentFloorHeight) + currentFloorHeight / 2;
           for (const side of [-1, 1]) {
-              // Désactiver les fenêtres du côté de l'escalier (side === 1)
-              if (side === 1) continue; // Ignorer les fenêtres de ce côté.
+              if (side === 1) continue; // Pas de fenêtres côté escalier
+              for (let j = 0; j < windowsPerFloor; j++) {
+                const x = side * (buildingWidth / 2 + windowDepth / 2 + 0.01);
+                const z = -buildingLength / 2 + (j + 0.5) * (buildingLength / windowsPerFloor);
+                const windowGeom = new THREE.BoxGeometry(windowDepth, windowHeight, windowWidth);
+                const windowMesh = new THREE.Mesh(windowGeom, windowMaterial);
+                windowMesh.position.set(x, yPos, z);
+                if (side === -1) {
+                  windowMesh.rotation.y = Math.PI;
+                }
+                windowMesh.castShadow = true;
+                buildingGroup.add(windowMesh);
+              }
+          }
+        }
 
-            for (let j = 0; j < windowsPerFloor; j++) {
-              const x = side * (buildingWidth / 2 + windowDepth / 2 + 0.01);
-              const z = -buildingLength / 2 + (j + 0.5) * (buildingLength / windowsPerFloor);
-              const windowGeom = new THREE.BoxGeometry(windowDepth, windowHeight, windowWidth);
+        // 4. Fenêtres sur les façades courtes (pas au RDC)
+        const windowsPerFloorShort = 2;
+        for (let i = 1; i < floors; i++) {
+          let currentFloorHeight = officeFloorHeight;
+          const yPos = groundFloorHeight + ((i - 1) * currentFloorHeight) + currentFloorHeight / 2;
+          for (const side of [-1, 1]) {
+            for (let j = 0; j < windowsPerFloorShort; j++) {
+              const z = side * (buildingLength / 2 + windowDepth / 2 + 0.01);
+              const x = -buildingWidth / 2 + (j + 0.5) * (buildingWidth / windowsPerFloorShort);
+              const windowGeom = new THREE.BoxGeometry(windowWidth, windowHeight, windowDepth);
               const windowMesh = new THREE.Mesh(windowGeom, windowMaterial);
               windowMesh.position.set(x, yPos, z);
-              if (side === -1) {
-                windowMesh.rotation.y = Math.PI;
-              }
+              windowMesh.rotation.y = side === 1 ? Math.PI / 2 : -Math.PI / 2;
               windowMesh.castShadow = true;
               buildingGroup.add(windowMesh);
             }
           }
         }
 
-        // 4. Création des fenêtres sur les façades courtes (pas au RDC)
-        const windowsPerFloorShort = 2;
-        for (let i = 1; i < floors; i++) { // Commence à 1 pour ne pas mettre de fenêtres au RDC
-          let currentFloorHeight = officeFloorHeight;
-            const yPos = groundFloorHeight + ((i-1) * currentFloorHeight) + currentFloorHeight / 2;
-            for (const side of [-1, 1]) {
-                for (let j = 0; j < windowsPerFloorShort; j++) {
-                    const z = side * (buildingLength / 2 + windowDepth / 2 + 0.01);
-                    const x = -buildingWidth / 2 + (j + 0.5) * (buildingWidth / windowsPerFloorShort);
-                    const windowGeom = new THREE.BoxGeometry(windowWidth, windowHeight, windowDepth);
-                    const windowMesh = new THREE.Mesh(windowGeom, windowMaterial);
-                    windowMesh.position.set(x, yPos, z);
-                    // Correction de l'orientation des fenêtres sur les façades courtes
-                    windowMesh.rotation.y = side === 1 ? Math.PI / 2 : -Math.PI / 2;
-                    windowMesh.castShadow = true;
-                    buildingGroup.add(windowMesh);
-                }
-            }
-        }
-
-        // 5. Ajout d'un escalier simple sur le rez-de-chaussée
+        // 5. Escalier simple sur le rez-de-chaussée
         const stairWidth = 2;
         const stairDepth = 3;
         const stairHeight = floorHeight;
         const stairGeometry = new THREE.BoxGeometry(stairWidth, stairHeight, stairDepth);
-        const stairMaterial = new THREE.MeshPhongMaterial({ color: 0x888888, specular: 0x333333, shininess: 20 }); // Matériau plus réaliste
+        const stairMaterial = new THREE.MeshPhongMaterial({
+          color: 0x888888,
+          specular: 0x333333,
+          shininess: 20
+        });
         const stairs = new THREE.Mesh(stairGeometry, stairMaterial);
         stairs.position.set(buildingWidth / 2 - stairWidth / 2, stairHeight / 2, buildingLength / 2 - stairDepth / 2);
         stairs.castShadow = true;
@@ -196,52 +213,98 @@
         const storefrontHeight = groundFloorHeight;
         const storefrontDepth = 0.1;
         const storefrontGeometry = new THREE.BoxGeometry(storefrontWidth, storefrontHeight, storefrontDepth);
-        const storefrontMaterial = new THREE.MeshPhongMaterial({ color: 0x999999, specular: 0x444444, shininess: 30 }); // Matériau plus réaliste
+        const storefrontMaterial = new THREE.MeshPhongMaterial({
+          color: 0x999999,
+          specular: 0x444444,
+          shininess: 30
+        });
         const storefront = new THREE.Mesh(storefrontGeometry, storefrontMaterial);
-        storefront.position.set(0, storefrontHeight / 2, buildingLength / 2 + storefrontDepth / 2 + 0.01); //positionnement de la façade du rez de chaussée
+        storefront.position.set(0, storefrontHeight / 2, buildingLength / 2 + storefrontDepth / 2 + 0.01);
         storefront.castShadow = true;
         storefront.receiveShadow = true;
         buildingGroup.add(storefront);
 
-        // Créer une entrée pour le commerce (par exemple, une ouverture dans la façade)
+        // Création d'une entrée pour le commerce (ouverture dans la façade)
         const entranceWidth = 3;
         const entranceHeight = storefrontHeight;
         const entranceDepth = 0.1;
         const entranceGeometry = new THREE.BoxGeometry(entranceWidth, entranceHeight, entranceDepth);
-        const entranceMaterial = new THREE.MeshBasicMaterial({color: 0x000000}); // Couleur noire pour représenter une ouverture
-
+        const entranceMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const entrance = new THREE.Mesh(entranceGeometry, entranceMaterial);
-        entrance.position.set(buildingWidth/2 - entranceWidth/2, entranceHeight / 2, buildingLength / 2 + storefrontDepth / 2 + 0.02); // légèrement en avant et à droite
+        entrance.position.set(buildingWidth / 2 - entranceWidth / 2, entranceHeight / 2, buildingLength / 2 + storefrontDepth / 2 + 0.02);
         buildingGroup.add(entrance);
+
+        // 7. Séparations entre les trois bureaux de chaque étage de bureaux
+        const partitionMaterial = new THREE.MeshPhongMaterial({
+          color: 0xffffff,
+          specular: 0x333333,
+          shininess: 10
+        });
+        const partitionThickness = 0.1;
+        const marginInterior = 0.5; // Marge intérieure par rapport aux façades
+        const officeInteriorLength = buildingLength - 2 * marginInterior;
+        for (let i = 1; i < floors; i++) {
+            const floorBottom = groundFloorHeight + groundFloorSlabThickness + (i - 1) * officeFloorHeight;
+            const partitionHeight = officeFloorHeight - 0.2;
+            const partitionCenterY = floorBottom + officeFloorHeight / 2;
+
+            // Première cloison à 1/3 de l'espace intérieur en longueur
+            const partition1Z = -buildingLength / 2 + marginInterior + officeInteriorLength / 3;
+            const partitionGeom1 = new THREE.BoxGeometry(
+              buildingWidth - 2 * marginInterior,
+              partitionHeight,
+              partitionThickness
+            );
+            const partition1 = new THREE.Mesh(partitionGeom1, partitionMaterial);
+            partition1.position.set(0, partitionCenterY, partition1Z);
+            partition1.castShadow = true;
+            buildingGroup.add(partition1);
+
+            // Deuxième cloison à 2/3 de l'espace intérieur
+            const partition2Z = -buildingLength / 2 + marginInterior + 2 * (officeInteriorLength / 3);
+            const partitionGeom2 = new THREE.BoxGeometry(
+              buildingWidth - 2 * marginInterior,
+              partitionHeight,
+              partitionThickness
+            );
+            const partition2 = new THREE.Mesh(partitionGeom2, partitionMaterial);
+            partition2.position.set(0, partitionCenterY, partition2Z);
+            partition2.castShadow = true;
+            buildingGroup.add(partition2);
+        }
 
         // Ajout du groupe de l'immeuble dans la scène
         buildingGroup.castShadow = true;
         buildingGroup.receiveShadow = true;
         scene.add(buildingGroup);
 
-         // Ajout d'un sol simple
+        // Sol simple avec polygonOffset pour éviter d'autres artefacts
         const groundGeometry = new THREE.PlaneGeometry(100, 100);
-        const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x669966 }); // Vert
+        const groundMaterial = new THREE.MeshPhongMaterial({
+            color: 0x669966,
+            polygonOffset: true,
+            polygonOffsetFactor: 1,
+            polygonOffsetUnits: 1
+        });
         const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-        ground.rotation.x = -Math.PI / 2; // Horizontal
-        ground.position.y = -0.1; // Légèrement en dessous de la base de l'immeuble
-        ground.receiveShadow = true; // Important pour recevoir les ombres
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.1;
+        ground.receiveShadow = true;
         scene.add(ground);
 
-         // Ajout du texte "BORJ HAJ BICHA"
+        // Ajout du texte "BORJ HAJ BICHA"
         const fontLoader = new FontLoader();
         fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
             const textGeometry = new TextGeometry('BORJ HAJ BICHA', {
                 font: font,
-                size: 2, // Taille du texte
-                height: 0.2, // Épaisseur du texte
+                size: 2,
+                height: 0.2,
                 curveSegments: 12,
                 bevelEnabled: true,
                 bevelThickness: 0.1,
                 bevelSize: 0.1,
                 bevelSegments: 5
             });
-
             const textMaterial = new THREE.MeshPhongMaterial({ color: 0xffa500 });
             const textMesh = new THREE.Mesh(textGeometry, textMaterial);
             textMesh.position.set(-15, buildingHeight + 1, 0);
@@ -251,21 +314,20 @@
         // Animation de la scène
         function animate() {
             requestAnimationFrame(animate);
-            controls.update(); // Mise à jour des contrôles de caméra
+            controls.update();
             renderer.render(scene, camera);
         }
-
         animate();
 
-        // Redimensionnement de la fenêtre pour ajuster le rendu
+        // Redimensionnement de la fenêtre
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
-   <footer>
-    <p>© 2025 Immeuble R+7 - Tous droits réservés | CHAABA MY ABDELOUAHAD | TEL: 0661112540</p>
-</footer> 
+    <footer>
+        <p>© 2025 Immeuble R+7 - Tous droits réservés | CHAABA MY ABDELOUAHAD | TEL: 0661112540</p>
+    </footer> 
 </body>
 </html>
