@@ -2,10 +2,20 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Immeuble R+7 en Three.js - Design Amélioré avec Textures et Environnement</title>
+  <title>Immeuble R+7 en Three.js - Design Amélioré avec Textures, Environnement et Éclairage Intérieur</title>
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
     canvas { display: block; }
+    /* Style du conteneur de contrôle (slider + bouton) */
+    #sliderContainer {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 5px;
+      z-index: 100;
+    }
     /* Style du footer */
     footer {
       position: fixed;
@@ -30,7 +40,15 @@
   </style>
 </head>
 <body>
-  <!-- Utilisation de importmap pour charger les modules -->
+  <!-- Contrôles : Slider pour la lumière directionnelle et bouton pour l'éclairage intérieur -->
+  <div id="sliderContainer">
+    <label for="lightSlider">Intensité lumière extérieure :</label>
+    <input type="range" id="lightSlider" min="0" max="2" step="0.01" value="0.8">
+    <br><br>
+    <button id="toggleInteriorLights">Allumer/Eteindre les lumières intérieures</button>
+  </div>
+  
+  <!-- Importmap pour charger les modules Three.js -->
   <script type="importmap">
   {
     "imports": {
@@ -46,11 +64,22 @@
     import { FontLoader } from 'three/addons/loaders/FontLoader.js';
     import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
     
-    // Création de la scène et de la caméra
+    // Création de la scène
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xb0c4de);
+    
+    // Dimensions de l'immeuble (pour réutilisation)
+    const buildingWidth = 8.77;
+    const buildingLength = 27.66;
+    const floorHeight = 3;
+    const floors = 8;
+    const buildingHeight = floors * floorHeight;
+    const groundFloorHeight = 4.5; // Rez-de-chaussée (local commercial)
+    const officeFloorHeight = (buildingHeight - groundFloorHeight) / (floors - 1);
+    
+    // Création de la caméra positionnée pour observer la façade avec fenêtres (côté négatif)
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(40, 40, 60);
+    camera.position.set(-50, 40, 40);
     
     // Création du renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -59,12 +88,12 @@
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
     
-    // Contrôles d'orbite
+    // Contrôles d'orbite centrés sur la façade contenant les fenêtres
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 12, 0);
+    controls.target.set(-buildingWidth / 2, buildingHeight / 2, 0);
     controls.update();
     
-    // Éclairage
+    // Éclairage extérieur
     const ambientLight = new THREE.AmbientLight(0x404040, 1);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -78,6 +107,12 @@
     directionalLight.shadow.normalBias = 0.05;
     scene.add(directionalLight);
     
+    // Slider pour ajuster l'intensité de la lumière directionnelle
+    const lightSlider = document.getElementById('lightSlider');
+    lightSlider.addEventListener('input', (event) => {
+      directionalLight.intensity = parseFloat(event.target.value);
+    });
+    
     // Chargement des textures (remplacez les URL par vos ressources)
     const textureLoader = new THREE.TextureLoader();
     const concreteTexture = textureLoader.load('textures/ATRIO-LIGHT-120X260.jpg');
@@ -85,15 +120,6 @@
     const glassTexture    = textureLoader.load('textures/TESSINO_SMOKE_NATURAL_120x260cm.jpg');
     const roadTexture     = textureLoader.load('textures/AT.MONSOON_OPALO_30.3x61.3.jpg');
     const sidewalkTexture = textureLoader.load('textures/AT.MONSOON_OPALO_30.3x61.3.jpg');
-    
-    // Dimensions de l'immeuble
-    const buildingWidth = 8.77;
-    const buildingLength = 27.66;
-    const floorHeight = 3;
-    const floors = 8;
-    const buildingHeight = floors * floorHeight;
-    const groundFloorHeight = 4.5; // Rez-de-chaussée (local commercial)
-    const officeFloorHeight = (buildingHeight - groundFloorHeight) / (floors - 1);
     
     // Groupe principal pour l'immeuble
     const buildingGroup = new THREE.Group();
@@ -275,8 +301,29 @@
     buildingGroup.receiveShadow = true;
     scene.add(buildingGroup);
     
+    // Création d'un groupe pour les lumières intérieures (pour les bureaux)
+    const interiorLightsGroup = new THREE.Group();
+    // Pour chaque étage de bureaux (on ignore le rez-de-chaussée)
+    for (let i = 1; i < floors; i++) {
+      const yPos = groundFloorHeight + ((i - 1) * officeFloorHeight) + officeFloorHeight / 2;
+      // Création d'une lumière ponctuelle avec intensité 0 (éteinte par défaut)
+      const pointLight = new THREE.PointLight(0xfff8e7, 0, 30);
+      pointLight.position.set(0, yPos, 0);
+      interiorLightsGroup.add(pointLight);
+    }
+    scene.add(interiorLightsGroup);
+    
+    // Bouton pour basculer l'éclairage intérieur
+    const toggleInteriorLightsBtn = document.getElementById('toggleInteriorLights');
+    let interiorLightsOn = false;
+    toggleInteriorLightsBtn.addEventListener('click', () => {
+      interiorLightsOn = !interiorLightsOn;
+      interiorLightsGroup.children.forEach(light => {
+        light.intensity = interiorLightsOn ? 1.0 : 0;
+      });
+    });
+    
     // Suppression du sol précédent et ajout d'une route texturée
-    // Création d'une route
     roadTexture.wrapS = roadTexture.wrapT = THREE.RepeatWrapping;
     roadTexture.repeat.set(10, 10);
     const roadMaterial = new THREE.MeshPhongMaterial({ map: roadTexture });
@@ -291,7 +338,6 @@
     sidewalkTexture.wrapS = sidewalkTexture.wrapT = THREE.RepeatWrapping;
     sidewalkTexture.repeat.set(10, 10);
     const sidewalkMaterial = new THREE.MeshPhongMaterial({ map: sidewalkTexture });
-    // Trottoirs avant et arrière
     const sidewalkGeometry1 = new THREE.PlaneGeometry(100, 10);
     const sidewalkFront = new THREE.Mesh(sidewalkGeometry1, sidewalkMaterial);
     sidewalkFront.rotation.x = -Math.PI / 2;
@@ -301,7 +347,6 @@
     const sidewalkBack = sidewalkFront.clone();
     sidewalkBack.position.set(0, -0.09, -45);
     scene.add(sidewalkBack);
-    // Trottoirs latéraux
     const sidewalkGeometry2 = new THREE.PlaneGeometry(10, 80);
     const sidewalkRight = new THREE.Mesh(sidewalkGeometry2, sidewalkMaterial);
     sidewalkRight.rotation.x = -Math.PI / 2;
@@ -331,7 +376,7 @@
       scene.add(textMesh);
     });
     
-    // 3. Fenêtres améliorées sur les façades longues avec cadres (mise à jour identique)
+    // Fenêtres améliorées sur les façades longues avec cadres
     const frameWidth = 0.2;
     const glassPhysicalMaterial = new THREE.MeshPhysicalMaterial({
       map: glassTexture,
@@ -357,10 +402,8 @@
           const x = side * (buildingWidth / 2 + windowDepth / 2 + 0.01);
           const z = -buildingLength / 2 + (j + 0.5) * (buildingLength / windowsPerFloor);
           const windowGroup = new THREE.Group();
-          // Cadre
           const frameGeom = new THREE.BoxGeometry(windowDepth, windowHeight + frameWidth * 2, windowWidth + frameWidth * 2);
           const frameMesh = new THREE.Mesh(frameGeom, frameMaterial);
-          // Vitre
           const glassGeom = new THREE.BoxGeometry(windowDepth * 1.01, windowHeight, windowWidth);
           const glassMesh = new THREE.Mesh(glassGeom, glassPhysicalMaterial);
           glassMesh.position.z = 0;
@@ -381,7 +424,7 @@
       }
     }
     
-    // Création d'une façade moderne avec éléments décoratifs utilisant texture pierre
+    // Façade moderne avec éléments décoratifs utilisant texture pierre
     function createModernFacade() {
       const facadeGroup = new THREE.Group();
       const facadeMaterial = new THREE.MeshPhongMaterial({
@@ -447,7 +490,7 @@
     const modernFacade = createModernFacade();
     buildingGroup.add(modernFacade);
     
-    // Création d'un toit-terrasse moderne avec sol texturé (béton)
+    // Toit-terrasse moderne avec sol texturé (béton)
     function createRoofTerrace() {
       const terraceGroup = new THREE.Group();
       const terraceFloorGeometry = new THREE.BoxGeometry(
@@ -577,16 +620,13 @@
     // Éléments environnementaux
     // ===============================
     
-    // Fonction pour créer un arbre simple
     function createTree(x, z) {
       const treeGroup = new THREE.Group();
-      // Tronc
       const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.2, 2, 8);
       const trunkMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
       const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
       trunk.position.y = 1;
       treeGroup.add(trunk);
-      // Feuillage
       const foliageGeometry = new THREE.SphereGeometry(1, 16, 16);
       const foliageMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 });
       const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
@@ -596,7 +636,6 @@
       return treeGroup;
     }
     
-    // Fonction pour créer un lampadaire
     function createLampPost(x, z) {
       const lampGroup = new THREE.Group();
       const poleGeometry = new THREE.CylinderGeometry(0.1, 0.1, 4, 8);
@@ -613,7 +652,6 @@
       return lampGroup;
     }
     
-    // Ajout de quelques arbres autour du bâtiment
     const treesPositions = [
       { x: -20, z: -10 },
       { x: 25,  z: -15 },
@@ -625,7 +663,6 @@
       scene.add(tree);
     });
     
-    // Ajout de quelques lampadaires
     const lampPositions = [
       { x: -15, z: 30 },
       { x: 15,  z: 30 },
@@ -637,7 +674,6 @@
       scene.add(lamp);
     });
     
-    // Animation
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
@@ -645,7 +681,6 @@
     }
     animate();
     
-    // Redimensionnement de la fenêtre
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
