@@ -115,8 +115,8 @@
     
     // Chargement des textures (remplacez les URL par vos ressources)
     const textureLoader = new THREE.TextureLoader();
-    const concreteTexture = textureLoader.load('textures/ATRIO-LIGHT-120X260.jpg');
-    const stoneTexture    = textureLoader.load('textures/ARAL_CREAM_NATURAL60x120.jpg');
+    const concreteTexture = textureLoader.load('textures/BERA_WHITE_59.8x119.8.jpg');
+    const stoneTexture    = textureLoader.load('textures/BERA_WHITE_59.8x119.8.jpg');
     const glassTexture    = textureLoader.load('textures/BERA_WHITE_59.8x119.8.jpg');
     const roadTexture     = textureLoader.load('textures/AT.MONSOON_OPALO_30.3x61.3.jpg');
     const sidewalkTexture = textureLoader.load('textures/AT.MONSOON_OPALO_30.3x61.3.jpg');
@@ -128,7 +128,7 @@
     const envelopeGeometry = new THREE.BoxGeometry(buildingWidth, buildingHeight, buildingLength);
     const envelopeMaterial = new THREE.MeshPhongMaterial({
       map: concreteTexture,
-      opacity: 0.8,
+      opacity: 0,
       transparent: false,
       specular: 0x444444,
       shininess: 30
@@ -375,14 +375,14 @@
     // Fenêtres améliorées sur les façades longues avec cadres
     const frameWidth = 0.2;
     const glassPhysicalMaterial = new THREE.MeshPhysicalMaterial({
-      map: glassTexture,
-      metalness: 0.2,
-      roughness: 0.1,
-      transmission: 0.9,
-      transparent: true,
-      opacity: 0.7,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.1
+      color: 0xE0F7FA,          // Couleur claire (bleu très pâle, ajustable)
+      metalness: 0.1,           // Réduit pour éviter un aspect trop métallique
+      roughness: 0.05,          // Très faible pour une surface lisse et brillante
+      transmission: 0.95,       // Presque entièrement transparent pour un effet vitreux
+      transparent: true,        // Active la transparence
+      opacity: 0.9,             // Légèrement opaque pour un rendu réaliste
+      clearcoat: 1.0,           // Maximum pour un effet vernis brillant
+      clearcoatRoughness: 0.01  // Très faible pour une brillance accrue
     });
     const frameMaterial = new THREE.MeshPhongMaterial({
       color: 0x555555,
@@ -426,12 +426,12 @@
       const facadeMaterial = new THREE.MeshPhongMaterial({
         map: stoneTexture,
         specular: 0x555555,
-        shininess: 30
+        shininess: 90
       });
       const accentMaterial = new THREE.MeshPhongMaterial({
         color: 0x3a7ca5,
         specular: 0x777777,
-        shininess: 50
+        shininess: 30
       });
       const facadeGeometry = new THREE.BoxGeometry(buildingWidth, buildingHeight, 0.2);
       const mainFacade = new THREE.Mesh(facadeGeometry, facadeMaterial);
