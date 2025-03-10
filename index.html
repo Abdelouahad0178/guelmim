@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
   <title>Immeuble R+7 en Three.js - Design Amélioré avec Textures, Environnement et Éclairage Intérieur</title>
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
@@ -142,7 +143,7 @@
     const floorHeight = 3;
     const floors = 8;
     const buildingHeight = floors * floorHeight;
-    const groundFloorHeight = 4.5; // Rez-de-chaussée (local commercial)
+    const groundFloorHeight = 4.5; // Local commercial
     const officeFloorHeight = (buildingHeight - groundFloorHeight) / (floors - 1);
     
     // Création de la caméra positionnée pour observer la façade avec fenêtres (côté négatif)
@@ -214,7 +215,7 @@
       polygonOffsetFactor: 1,
       polygonOffsetUnits: 1
     });
-    // Dalle du rez-de-chaussée
+    // Dalle du local commercial
     const groundFloorSlabThickness = 0.2;
     const groundFloorSlabGeometry = new THREE.BoxGeometry(buildingWidth, groundFloorSlabThickness, buildingLength);
     const groundFloorSlab = new THREE.Mesh(groundFloorSlabGeometry, floorMaterial);
@@ -234,7 +235,7 @@
       buildingGroup.add(slab);
     }
     
-    // 3. Fenêtres sur les façades longues avec texture pour le verre (uniquement côté gauche)
+    // 3. Fenêtres sur les façades longues (uniquement côté gauche)
     const windowWidth = 3.0;
     const windowHeight = 2;
     const windowDepth = 0.1;
@@ -281,7 +282,7 @@
       }
     }
     
-    // 5. Escalier simple sur le rez-de-chaussée
+    // 5. Escalier simple sur le local commercial
     const stairWidth = 2;
     const stairDepth = 3;
     const stairHeight = floorHeight;
@@ -297,7 +298,7 @@
     stairs.receiveShadow = true;
     buildingGroup.add(stairs);
     
-    // 6. Façade du rez-de-chaussée (local commercial) avec texture pierre
+    // 6. Façade du local commercial avec texture pierre
     const storefrontWidth = buildingWidth;
     const storefrontHeight = groundFloorHeight;
     const storefrontDepth = 0.1;
@@ -315,14 +316,14 @@
     
     // ====================================================
     // 7. Ajout de SIX PORTES (panneaux sous forme de rideaux) dans la façade des fenêtres
-    // ====================================================
+    // (Les rideaux de commerce restent inchangés)
     {
       const doorPanelMaterial = new THREE.MeshPhongMaterial({ color: 0x990000, side: THREE.DoubleSide });
-      const doorPanelThickness = 0.02; // épaisseur fine
-      const gap = 0.1; // petit espace entre les panneaux
+      const doorPanelThickness = 0.02;
+      const gap = 0.1;
       const doorPanelWidth = (buildingLength / 6) - gap; 
-      const doorPanelHeight = storefrontHeight; // hauteur = celle du local commercial
-      const offsetX = 0.5; // pour éviter le z-fighting
+      const doorPanelHeight = storefrontHeight;
+      const offsetX = 0.5;
       const xPos = -buildingWidth / 2 - windowDepth / 2 - offsetX;
       const step = buildingLength / 6;
       for (let i = 0; i < 6; i++) {
@@ -335,7 +336,7 @@
       }
     }
     
-    // 8. Séparations intérieures (cloisons) avec texture pierre
+    // 8. Cloisons intérieures avec texture pierre
     const partitionMaterial = new THREE.MeshPhongMaterial({
       map: stoneTexture,
       specular: 0x333333,
@@ -367,7 +368,7 @@
     buildingGroup.receiveShadow = true;
     scene.add(buildingGroup);
     
-    // Création d'un groupe pour les lumières intérieures (bureaux)
+    // Lumières intérieures pour les bureaux
     const interiorLightsGroup = new THREE.Group();
     for (let i = 1; i < floors; i++) {
       const yPos = groundFloorHeight + ((i - 1) * officeFloorHeight) + officeFloorHeight / 2;
@@ -387,7 +388,7 @@
       });
     });
     
-    // Ajout d'une route texturée
+    // Route texturée
     roadTexture.wrapS = roadTexture.wrapT = THREE.RepeatWrapping;
     roadTexture.repeat.set(10, 10);
     const roadMaterial = new THREE.MeshPhongMaterial({ map: roadTexture });
@@ -398,7 +399,7 @@
     road.receiveShadow = true;
     scene.add(road);
     
-    // Ajout d'un trottoir autour de la route
+    // Trottoir autour de la route
     sidewalkTexture.wrapS = sidewalkTexture.wrapT = THREE.RepeatWrapping;
     sidewalkTexture.repeat.set(10, 10);
     const sidewalkMaterial = new THREE.MeshPhongMaterial({ map: sidewalkTexture });
@@ -440,7 +441,8 @@
       scene.add(textMesh);
     });
     
-    // Fenêtres améliorées sur les façades longues avec cadres (pour les étages 1 à 7, on ajoute 1 mètre en plus)
+    // Fenêtres améliorées avec cadres
+    // Pour les étages de bureaux (1 à 7), on ajoute 1 mètre de décalage vers l’extérieur (sans toucher la zone du rideau de commerce)
     const frameWidth = 0.2;
     const glassPhysicalMaterial = new THREE.MeshPhysicalMaterial({
       map: glassTexture,
@@ -460,11 +462,11 @@
     for (let i = 1; i < floors; i++) {
       let currentFloorHeight = officeFloorHeight;
       const yPos = groundFloorHeight + ((i - 1) * currentFloorHeight) + currentFloorHeight / 2;
+      // Modification uniquement pour les étages de bureaux (1 à 7)
       for (const side of [-1, 1]) {
         if (side === 1) continue;
         for (let j = 0; j < windowsPerFloor; j++) {
-          // Ajout de 1 mètre supplémentaire pour la façade des fenêtres
-          const extra = 1;
+          const extra = 1; // 1 mètre supplémentaire de décalage
           const x = side * (buildingWidth / 2 + windowDepth / 2 + 0.01 + extra);
           const z = -buildingLength / 2 + (j + 0.5) * (buildingLength / windowsPerFloor);
           const windowGroup = new THREE.Group();
@@ -490,7 +492,7 @@
       }
     }
     
-    // Façade moderne avec éléments décoratifs utilisant texture pierre et le rideau de façade de la porte
+    // Façade moderne avec éléments décoratifs et rideau de porte (zone du local commercial inchangée)
     function createModernFacade() {
       const facadeGroup = new THREE.Group();
       const facadeMaterial = new THREE.MeshPhongMaterial({
@@ -503,7 +505,7 @@
         specular: 0x777777,
         shininess: 50
       });
-      // Façade principale (originale)
+      // Façade principale originale
       const facadeGeometry = new THREE.BoxGeometry(buildingWidth, buildingHeight, 0.2);
       const mainFacade = new THREE.Mesh(facadeGeometry, facadeMaterial);
       mainFacade.position.set(0, buildingHeight / 2, buildingLength / 2 + 0.1);
@@ -511,7 +513,7 @@
       mainFacade.receiveShadow = true;
       facadeGroup.add(mainFacade);
       
-      // Bandes d'accent pour chaque étage (1 à 7)
+      // Bandes d'accent pour chaque étage (du 1er au 7ème)
       for (let i = 1; i < floors; i++) {
         const bandHeight = 0.4;
         const bandGeometry = new THREE.BoxGeometry(buildingWidth + 0.4, bandHeight, 0.3);
@@ -521,6 +523,7 @@
         band.castShadow = true;
         facadeGroup.add(band);
       }
+      
       // Couronnement
       const crownHeight = 1.2;
       const crownGeometry = new THREE.BoxGeometry(buildingWidth + 1, crownHeight, 0.5);
@@ -529,9 +532,9 @@
       crown.castShadow = true;
       facadeGroup.add(crown);
       
-      // Porte principale et son encadrement (local commercial, non modifié)
+      // Encadrement de la porte principale (local commercial inchangé)
       const entranceWidth = 3.5;
-      const entranceHeight = groundFloorHeight + 0.5;
+      const entranceHeight = storefrontHeight + 0.5;
       const entranceDepth = 0.8;
       const frameGeometry = new THREE.BoxGeometry(entranceWidth + 0.6, entranceHeight + 0.6, entranceDepth);
       const entranceFrame = new THREE.Mesh(frameGeometry, accentMaterial);
@@ -559,19 +562,19 @@
       );
       facadeGroup.add(door);
       
-      // Rideau de la façade de la porte (local commercial)
+      // Rideau de la porte principale (zone du local commercial)
       const doorCurtainGeometry = new THREE.BoxGeometry(storefrontWidth, storefrontHeight, 0.01);
       const doorCurtainMaterial = new THREE.MeshPhongMaterial({ color: 0x990000, side: THREE.DoubleSide });
       const doorCurtain = new THREE.Mesh(doorCurtainGeometry, doorCurtainMaterial);
       doorCurtain.position.set(0, storefrontHeight / 2, buildingLength / 2 + storefrontDepth / 2 + 0.5);
       facadeGroup.add(doorCurtain);
       
-      // Extension de 1 mètre pour les étages 1 à 7 (au-dessus du local commercial)
-      const extendedFacadeHeight = buildingHeight - groundFloorHeight;
+      // Extension de 1 mètre sur la façade des bureaux (du 1er au 7ème étage uniquement)
+      const extendedFacadeHeight = buildingHeight - storefrontHeight;
       const extendedFacadeGeometry = new THREE.BoxGeometry(buildingWidth, extendedFacadeHeight, 1);
-      // Positionné sur la façade avant (on décale de 0.5 m, soit la moitié de l'extension)
+      // L'extension débute juste au-dessus du local commercial
       const extendedFacade = new THREE.Mesh(extendedFacadeGeometry, facadeMaterial);
-      extendedFacade.position.set(0, groundFloorHeight + extendedFacadeHeight / 2, buildingLength / 2 + 0.1 + 0.5);
+      extendedFacade.position.set(0, storefrontHeight + extendedFacadeHeight / 2, buildingLength / 2 + 0.1 + 0.5);
       extendedFacade.castShadow = true;
       extendedFacade.receiveShadow = true;
       facadeGroup.add(extendedFacade);
@@ -687,9 +690,7 @@
     const roofTerrace = createRoofTerrace();
     buildingGroup.add(roofTerrace);
     
-    // ===============================
     // Éléments environnementaux
-    // ===============================
     function createTree(x, z) {
       const treeGroup = new THREE.Group();
       const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.2, 2, 8);
@@ -757,10 +758,8 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
     
-    // ====================================================
     // Gestion de la séquence d'images
-    // ====================================================
-    const images = ["/textures/plateau.png","/textures/image1.png", "/textures/IMAGE2.png", "/textures/IMAGE3.png"];
+    const images = ["/textures/image1.png", "/textures/image1.png", "/textures/IMAGE2.png", "/textures/IMAGE3.png"];
     let currentImageIndex = 0;
     const imageSequenceModal = document.getElementById("imageSequenceModal");
     const sequenceImage = document.getElementById("sequenceImage");
@@ -791,7 +790,17 @@
     
   </script>
   <footer>
-    <p>© 2025 Immeuble R+7 - Tous droits réservés | CHAABA MY ABDELOUAHAD | TEL: 0661112540</p>
+    <p>© 2025 Immeuble R+7 - Tous droits réservés | CHAABA MY ABDELOUAHAD | 📞: 0661112540</p>
+    <!-- Icône d'adresse pointant vers Google Maps pour "Guelmim, Maroc, Av Med 5" -->
+     
+    <p style="color: rgb(212, 140, 25); font-size: 24px; font-weight: 900;">
+       VISITEZ NOUS ICI  : <a href="https://www.google.com/maps/search/?api=1&query=Guelmim+Maroc+Av+Med+5" target="_blank">
+        <i class="fas fa-map-marker-alt" style="color: chartreuse;"></i>
+       <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Google_Maps_icon_%282020%29.svg" alt="" style="height:24px;vertical-align:middle; margin-right:5px;">
+        
+        
+      </a>
+    </p>
   </footer>
 </body>
 </html>
