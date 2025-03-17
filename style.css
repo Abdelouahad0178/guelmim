@@ -1,8 +1,89 @@
-body {
-    margin: 0;
-    overflow: hidden;
-}
 
-canvas {
-    display: block;
-}
+    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+    canvas { display: block; }
+    /* Style du conteneur de contrôle (slider + boutons) */
+    #sliderContainer {
+      position: fixed;
+      top: 72px;
+      left: 10px;
+      background: rgb(17 35 87 / 80%);
+      padding: 10px;
+      border-radius: 5px;
+      z-index: 100;
+    }
+    /* Style du footer */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #2c3e50;
+      color: #ecf0f1;
+      text-align: center;
+      padding: 15px 0;
+      font-size: 16px;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
+    }
+    footer a {
+      color: #ecf0f1;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    footer a:hover {
+      color: #f39c12;                    
+    }
+    /* Styles pour le modal de la séquence d'images */
+    #imageSequenceModal {
+      display: none;
+      position: fixed;
+      z-index: 200;
+      left: 0;
+      top: 0;
+      width: 90%;
+      height: 90%;
+      background-color: rgba(0,0,0,0.8);
+      align-items: center;
+      justify-content: center;
+    }
+    #imageSequenceContent {
+      position: relative;
+      max-width: 80%;
+      max-height: 80%;
+      text-align: center;
+    }
+    #imageSequenceContent img {
+      max-width: 100%;
+      max-height: 100%;
+      border: 5px solid #fff;
+      border-radius: 5px;
+    }
+    #modalNavigation {
+      margin-top: 10px;
+    }
+    #modalNavigation button {
+      background: #2c3e50;
+      color: #ecf0f1;
+      border: none;
+      padding: 8px 15px;
+      margin: 0 5px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    #modalNavigation button:hover {
+      background: #f39c12;
+    }
+    #closeModal {
+      position: absolute;
+      top: -15px;
+      right: -15px;
+      background: #f39c12;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      font-size: 24px;
+      line-height: 28px;
+      cursor: pointer;
+    }
+  
